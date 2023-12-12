@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_todo_empty/screens/home_screen.dart';
+import 'package:flutter_todo_empty/auth/auth_screen.dart';
 
 void main() {
   runApp(const MainApp());
@@ -10,10 +10,10 @@ class MainApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'To Do App',
-      home: HomeScreen(),
+      home: AuthScreen(),
     );
   }
 }
