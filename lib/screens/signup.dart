@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+
+import 'package:flutter_todo_empty/models/user/user_model.dart';
+import 'package:flutter_todo_empty/screens/home_screen.dart';
 
 class SignupScreen extends StatefulWidget {
   final VoidCallback show;
@@ -13,23 +17,66 @@ class _SignupScreenState extends State<SignupScreen> {
   FocusNode _focusNode2 = FocusNode();
   FocusNode _focusNode3 = FocusNode();
 
-  final email = TextEditingController();
-  final password = TextEditingController();
-  final PasswordConfirm = TextEditingController();
+  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
 
-  @override
-  void initState() {
-    // TODO: implement initState
-    super.initState();
-    _focusNode1.addListener(() {
-      setState(() {});
+  bool _isPasswordHidden = true;
+
+  void _togglePasswordVisibility() {
+    setState(() {
+      _isPasswordHidden = !_isPasswordHidden;
     });
-    _focusNode2.addListener(() {
-      setState(() {});
-    });
-    _focusNode3.addListener(() {
-      setState(() {});
-    });
+  }
+
+  void _signup(BuildContext context) async {
+    String username = _usernameController.text;
+    String password = _passwordController.text;
+    String confirmPassword = _confirmPasswordController.text;
+
+    if (password != confirmPassword) {
+      _displayErrorDialog(context, 'Passwords do not match');
+      return;
+    }
+
+    var userBox = Hive.box<UserModel>('users');
+    bool usernameExists =
+        userBox.values.any((user) => user.username == username);
+
+    if (usernameExists) {
+      _displayErrorDialog(context, 'Username already taken');
+    } else {
+      // Save user data to Hive
+      var user = UserModel(username, password);
+      userBox.add(user);
+
+      // Navigate to the home page
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => HomeScreen(username: username,)),
+      );
+    }
+  }
+
+  void _displayErrorDialog(BuildContext context, String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Signup Error'),
+          content: Text(message),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -46,16 +93,18 @@ class _SignupScreenState extends State<SignupScreen> {
         child: SingleChildScrollView(
           child: Column(
             children: [
-              textfield(email, _focusNode1, 'Email', Icons.email),
+              textfield(_usernameController, _focusNode1, 'Username',
+                  Icons.email, false),
               SizedBox(height: 10),
-              textfield(password, _focusNode2, 'Password', Icons.lock),
+              textfield(_passwordController, _focusNode2, 'Password',
+                  Icons.lock, true),
               SizedBox(height: 10),
-              textfield(
-                  PasswordConfirm, _focusNode3, 'Confirm password', Icons.lock),
+              textfield(_confirmPasswordController, _focusNode3,
+                  'Confirm password', Icons.lock, true),
               SizedBox(height: 8),
               account(),
               SizedBox(height: 20),
-              SignUP_bottom(),
+              signupBtn(),
             ],
           ),
         ),
@@ -89,14 +138,13 @@ class _SignupScreenState extends State<SignupScreen> {
     );
   }
 
-  Widget SignUP_bottom() {
+  Widget signupBtn() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 15),
-      child: GestureDetector(
-        // onTap: () {
-        //   AuthenticationRemote()
-        //       .register(email.text, password.text, PasswordConfirm.text);
-        // },
+      child: TextButton(
+        onPressed: () {
+          _signup(context);
+        },
         child: Container(
           alignment: Alignment.center,
           width: double.infinity,
@@ -119,7 +167,7 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   Widget textfield(TextEditingController _controller, FocusNode _focusNode,
-      String typeName, IconData iconss) {
+      String typeName, IconData icons, bool passwordShow) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 15),
       child: Container(
@@ -130,10 +178,21 @@ class _SignupScreenState extends State<SignupScreen> {
         child: TextField(
           controller: _controller,
           focusNode: _focusNode,
+          obscureText: passwordShow ? _isPasswordHidden : false,
           style: TextStyle(fontSize: 18, color: Colors.black),
           decoration: InputDecoration(
+              suffixIcon: passwordShow
+                  ? IconButton(
+                      icon: Icon(
+                        _isPasswordHidden
+                            ? Icons.visibility_off
+                            : Icons.visibility,
+                      ),
+                      onPressed: _togglePasswordVisibility,
+                    )
+                  : Text(''),
               prefixIcon: Icon(
-                iconss,
+                icons,
                 color:
                     _focusNode.hasFocus ? Colors.lightBlue : Color(0xffc5c5c5),
               ),

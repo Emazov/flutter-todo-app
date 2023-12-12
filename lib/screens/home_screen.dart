@@ -4,10 +4,12 @@ import 'package:hive_flutter/hive_flutter.dart';
 
 import 'package:flutter_todo_empty/data/task/hive_data_store.dart';
 import 'package:flutter_todo_empty/models/task/task_model.dart';
+import 'package:flutter_todo_empty/auth/auth_screen.dart';
 import 'package:flutter_todo_empty/widgets/task_widget.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final String username;
+  const HomeScreen({super.key, required this.username});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -15,6 +17,13 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final HiveDataStore dataStore = HiveDataStore();
+
+  void _logout(BuildContext context) {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => AuthScreen()),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,56 +44,63 @@ class _HomeScreenState extends State<HomeScreen> {
                       },
                       child: Container(
                           margin: const EdgeInsets.only(left: 6),
-                          child: const Text(
-                            'My today Tasks',
+                          child: Text(
+                            '${widget.username}\'s today Tasks',
                             style: TextStyle(color: Colors.black),
                           ))),
                 ),
                 actions: [
                   IconButton(
                       onPressed: () {
-                        showModalBottomSheet(
-                            context: context,
-                            builder: (context) {
-                              return Container(
-                                width: MediaQuery.of(context).size.width,
-                                padding: EdgeInsets.only(
-                                    bottom: MediaQuery.of(context)
-                                        .viewInsets
-                                        .bottom),
-                                margin:
-                                    const EdgeInsets.symmetric(horizontal: 16),
-                                child: ListTile(
-                                  title: TextField(
-                                    decoration: const InputDecoration(
-                                        border: InputBorder.none,
-                                        hintText: 'Enter task name'),
-                                    onSubmitted: (value) {
-                                      Navigator.pop(context);
-                                      // var currentDate = DateTime.now();
-                                      DatePicker.showTimePicker(context,
-                                          showSecondsColumn: false,
-                                          showTitleActions: true,
-                                          onChanged: (date) {},
-                                          onConfirm: (date) {
-                                        if (value.isNotEmpty) {
-                                          var task = TaskModel.create(
-                                              name: value, createdAt: date);
-                                          dataStore.addTask(task: task);
-                                        }
-                                      }, currentTime: DateTime.now());
-                                    },
-                                    autofocus: true,
-                                  ),
-                                ),
-                              );
-                            });
+                        _logout(context);
                       },
                       icon: const Padding(
                         padding: EdgeInsets.only(top: 25.0),
-                        child: Icon(Icons.add),
+                        child: Icon(Icons.logout),
                       ))
                 ],
+              ),
+              floatingActionButton: FloatingActionButton(
+                onPressed: () {
+                  showModalBottomSheet(
+                      context: context,
+                      builder: (context) {
+                        return Container(
+                          width: MediaQuery.of(context).size.width,
+                          padding: EdgeInsets.only(
+                              bottom: MediaQuery.of(context).viewInsets.bottom),
+                          margin: const EdgeInsets.symmetric(horizontal: 16),
+                          child: ListTile(
+                            title: TextField(
+                              decoration: const InputDecoration(
+                                  border: InputBorder.none,
+                                  hintText: 'Enter task name'),
+                              onSubmitted: (value) {
+                                Navigator.pop(context);
+                                // var currentDate = DateTime.now();
+                                DatePicker.showTimePicker(context,
+                                    showSecondsColumn: false,
+                                    showTitleActions: true,
+                                    onChanged: (date) {}, onConfirm: (date) {
+                                  if (value.isNotEmpty) {
+                                    var task = TaskModel.create(
+                                        name: value, createdAt: date);
+                                    dataStore.addTask(task: task);
+                                  }
+                                }, currentTime: DateTime.now());
+                              },
+                              autofocus: true,
+                            ),
+                          ),
+                        );
+                      });
+                },
+                child: Icon(Icons.add),
+                backgroundColor: Colors.white,
+                elevation: 10,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10.0),
+                ),
               ),
               body: ListView.builder(
                 itemCount: tasks.length,

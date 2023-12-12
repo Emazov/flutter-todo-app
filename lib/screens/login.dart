@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_todo_empty/screens/home_screen.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+
+import 'package:flutter_todo_empty/models/user/user_model.dart';
 
 class LoginScreen extends StatefulWidget {
   final VoidCallback show;
-  LoginScreen(this.show, {super.key});
+  const LoginScreen(this.show, {super.key});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -12,20 +16,56 @@ class _LoginScreenState extends State<LoginScreen> {
   FocusNode _focusNode_email = FocusNode();
   FocusNode _focusNode_password = FocusNode();
 
-  final email = TextEditingController();
-  final password = TextEditingController();
+  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
 
-  @override
-  void initState() {
-    // TODO: implement initState
-    super.initState();
-    _focusNode_email.addListener(() {
-      setState(() {});
+  bool _isPasswordHidden = true;
+
+  void _togglePasswordVisibility() {
+    setState(() {
+      _isPasswordHidden = !_isPasswordHidden;
     });
-    super.initState();
-    _focusNode_password.addListener(() {
-      setState(() {});
-    });
+  }
+
+  void _login(BuildContext context) {
+    String username = _usernameController.text;
+    String password = _passwordController.text;
+
+    var userBox = Hive.box<UserModel>('users');
+    var user = userBox.values.firstWhere((user) => user.username == username,
+        orElse: () => UserModel('', ''));
+
+    if (user.password == password) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+            builder: (context) => HomeScreen(
+                  username: username,
+                )),
+      );
+    } else {
+      _displayErrorDialog(context, 'Invalid username or password');
+    }
+  }
+
+  void _displayErrorDialog(BuildContext context, String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Login Error'),
+          content: Text(message),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -41,9 +81,11 @@ class _LoginScreenState extends State<LoginScreen> {
         child: SingleChildScrollView(
           child: Column(
             children: [
-              textfield(email, _focusNode_email, 'Email', Icons.email),
+              textfield(_usernameController, _focusNode_email, 'Username',
+                  Icons.email, false),
               SizedBox(height: 10),
-              textfield(password, _focusNode_password, 'Password', Icons.lock),
+              textfield(_passwordController, _focusNode_password, 'Password',
+                  Icons.lock, true),
               SizedBox(height: 8),
               account(),
               SizedBox(height: 20),
@@ -84,10 +126,10 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget loginBtn() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 15),
-      child: GestureDetector(
-        // onTap: () {
-        //   AuthenticationRemote().login(email.text, password.text);
-        // },
+      child: TextButton(
+        onPressed: () {
+          _login(context);
+        },
         child: Container(
           alignment: Alignment.center,
           width: double.infinity,
@@ -110,7 +152,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget textfield(TextEditingController _controller, FocusNode _focusNode,
-      String typeName, IconData iconss) {
+      String typeName, IconData icons, bool passwordShow) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 15),
       child: Container(
@@ -121,10 +163,21 @@ class _LoginScreenState extends State<LoginScreen> {
         child: TextField(
           controller: _controller,
           focusNode: _focusNode,
+          obscureText: passwordShow ? _isPasswordHidden : false,
           style: TextStyle(fontSize: 18, color: Colors.black),
           decoration: InputDecoration(
+              suffixIcon: passwordShow
+                  ? IconButton(
+                      icon: Icon(
+                        _isPasswordHidden
+                            ? Icons.visibility_off
+                            : Icons.visibility,
+                      ),
+                      onPressed: _togglePasswordVisibility,
+                    )
+                  : Text(''),
               prefixIcon: Icon(
-                iconss,
+                icons,
                 color:
                     _focusNode.hasFocus ? Colors.lightBlue : Color(0xffc5c5c5),
               ),
