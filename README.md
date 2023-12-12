@@ -1,3 +1,2 @@
-# flutter_todo_empty
+# Flutter simple todo app
 
-A new Flutter project.
